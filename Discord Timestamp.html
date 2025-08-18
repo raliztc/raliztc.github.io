@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Discord Timestamp 產生器</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    input, button { padding: 6px 10px; margin: 5px 3px; border-radius: 5px; border: 1px solid #ccc; }
+    button { cursor: pointer; background: #4caf50; color: white; }
+    button:hover { background: #45a049; }
+    .copy-btn { background: #2196f3; margin-left: 10px; }
+    .copy-btn:hover { background: #1976d2; }
+    .line { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h2>⏰ Discord Timestamp 產生器</h2>
+
+  <label>輸入時間 (格式: YYYY-MM-DD HH:MM):</label><br>
+  <input type="text" id="datetime" placeholder="2025-08-18 22:30" size="20">
+  <button onclick="generate()">產生</button>
+  <button onclick="useNow()">使用現在時間</button>
+
+  <h3>結果：</h3>
+  <div id="output">（這裡會顯示結果）</div>
+
+  <script>
+    function generate(unixOverride = null) {
+      let unix;
+      if (unixOverride) {
+        unix = unixOverride;
+      } else {
+        const input = document.getElementById("datetime").value.trim();
+        if (!input) {
+          alert("請輸入時間！");
+          return;
+        }
+        const dt = new Date(input.replace(" ", "T") + ":00+08:00"); // 台灣時區
+        unix = Math.floor(dt.getTime() / 1000);
+      }
+
+      const formats = {
+        "t": "只顯示時間",
+        "T": "顯示完整時間",
+        "d": "顯示日期",
+        "D": "顯示完整日期",
+        "f": "日期 + 時間",
+        "F": "完整日期 + 時間",
+        "R": "相對時間"
+      };
+
+      let html = "";
+      for (const [code, desc] of Object.entries(formats)) {
+        const tag = `<t:${unix}:${code}>`;
+        html += `
+          <div class="line">
+            <code>${tag}</code> → ${desc}
+            <button class="copy-btn" onclick="copyToClipboard('${tag}')">複製</button>
+          </div>
+        `;
+      }
+
+      document.getElementById("output").innerHTML = html;
+    }
+
+    function useNow() {
+      const now = Math.floor(Date.now() / 1000);
+      generate(now);
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("已複製: " + text);
+      });
+    }
+  </script>
+</body>
+</html>
