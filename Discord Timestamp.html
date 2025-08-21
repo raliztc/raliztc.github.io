@@ -4,74 +4,164 @@
   <meta charset="UTF-8">
   <title>Discord Timestamp 產生器</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 30px; }
-    input, button { padding: 6px 10px; margin: 5px 3px; border-radius: 5px; border: 1px solid #ccc; }
-    button { cursor: pointer; background: #4caf50; color: white; }
-    button:hover { background: #45a049; }
-    .copy-btn { background: #2196f3; margin-left: 10px; }
-    .copy-btn:hover { background: #1976d2; }
-    .line { margin: 5px 0; }
+    body {
+      font-family: "Courier New", monospace;
+      background-color: #2f3136;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 6px 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+    input {
+      width: 220px;
+      text-align: center;
+    }
+    button {
+      cursor: pointer;
+    }
+    .btn-copy {
+      background-color: #5865f2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+    .container {
+      margin-top: 20px;
+      width: 100%;
+      max-width: 950px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 2fr auto 2fr 3fr; /* 代碼 / 按鈕 / 說明 / 預覽 */
+      gap: 20px;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #444;
+    }
+    .code {
+      font-family: "Courier New", monospace;
+      background: #1e1f22;
+      padding: 5px 8px;
+      border-radius: 5px;
+      color: #00ffea;
+      text-align: left;
+    }
+    .desc {
+      text-align: left;
+      color: #aaa;
+    }
+    .preview {
+      text-align: left;
+      color: #ddd;
+    }
   </style>
 </head>
 <body>
   <h2>⏰ Discord Timestamp 產生器</h2>
-
-  <label>輸入時間 (格式: YYYY-MM-DD HH:MM):</label><br>
-  <input type="text" id="datetime" placeholder="2025-08-18 22:30" size="20">
+  <input type="text" id="datetime" placeholder="2025-08-18 22:30">
   <button onclick="generate()">產生</button>
-  <button onclick="useNow()">使用現在時間</button>
+  <button onclick="generateNow()">使用現在時間</button>
 
-  <h3>結果：</h3>
-  <div id="output">（這裡會顯示結果）</div>
+  <div class="container" id="output"></div>
 
   <script>
-    function generate(unixOverride = null) {
-      let unix;
-      if (unixOverride) {
-        unix = unixOverride;
-      } else {
-        const input = document.getElementById("datetime").value.trim();
-        if (!input) {
-          alert("請輸入時間！");
-          return;
-        }
-        const dt = new Date(input.replace(" ", "T") + ":00+08:00"); // 台灣時區
-        unix = Math.floor(dt.getTime() / 1000);
+    function generate() {
+      const input = document.getElementById("datetime").value.trim();
+      if (!input) {
+        alert("請輸入時間！");
+        return;
       }
+      const dt = new Date(input.replace(" ", "T") + ":00+08:00");
+      if (isNaN(dt.getTime())) {
+        alert("時間格式錯誤，請輸入 YYYY-MM-DD HH:MM");
+        return;
+      }
+      render(dt);
+    }
 
-      const formats = {
-        "t": "只顯示時間",
-        "T": "顯示完整時間",
-        "d": "顯示日期",
-        "D": "顯示完整日期",
-        "f": "日期 + 時間",
-        "F": "完整日期 + 時間",
-        "R": "相對時間"
-      };
+    function generateNow() {
+      const dt = new Date();
+      render(dt);
+    }
+
+    function render(dt) {
+      const unix = Math.floor(dt.getTime() / 1000);
+      const formats = [
+        { code: `t`, label: "只顯示時間" },
+        { code: `T`, label: "顯示完整時間" },
+        { code: `d`, label: "顯示日期" },
+        { code: `D`, label: "顯示完整日期" },
+        { code: `f`, label: "日期 + 時間" },
+        { code: `F`, label: "完整日期 + 時間" },
+        { code: `R`, label: "相對時間" },
+      ];
 
       let html = "";
-      for (const [code, desc] of Object.entries(formats)) {
-        const tag = `<t:${unix}:${code}>`;
+      formats.forEach(f => {
+        const code = `<t:${unix}:${f.code}>`;
+        const preview = formatPreview(dt, f.code);
         html += `
-          <div class="line">
-            <code>${tag}</code> → ${desc}
-            <button class="copy-btn" onclick="copyToClipboard('${tag}')">複製</button>
+          <div class="row">
+            <div class="code">${code}</div>
+            <button class="btn-copy" onclick="copyCode('${code}')">複製</button>
+            <div class="desc">→ ${f.label}</div>
+            <div class="preview">預覽：${preview}</div>
           </div>
         `;
-      }
-
+      });
       document.getElementById("output").innerHTML = html;
     }
 
-    function useNow() {
-      const now = Math.floor(Date.now() / 1000);
-      generate(now);
+    function copyCode(code) {
+      navigator.clipboard.writeText(code);
+      alert("已複製：" + code);
     }
 
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        alert("已複製: " + text);
-      });
+    // 模擬 Discord 的預覽格式
+    function formatPreview(dt, type) {
+      const optsTime = { hour: "2-digit", minute: "2-digit" };
+      const optsFullTime = { hour: "2-digit", minute: "2-digit", second: "2-digit" };
+      const optsDate = { year: "numeric", month: "numeric", day: "numeric" };
+      const optsFullDate = { year: "numeric", month: "long", day: "numeric" };
+      const optsDateTime = { ...optsDate, ...optsTime };
+      const optsFullDateTime = { weekday: "long", ...optsFullDate, ...optsFullTime };
+
+      switch (type) {
+        case "t": return dt.toLocaleTimeString("zh-TW", optsTime);
+        case "T": return dt.toLocaleTimeString("zh-TW", optsFullTime);
+        case "d": return dt.toLocaleDateString("zh-TW", optsDate);
+        case "D": return dt.toLocaleDateString("zh-TW", optsFullDate);
+        case "f": return dt.toLocaleString("zh-TW", optsDateTime);
+        case "F": return dt.toLocaleString("zh-TW", optsFullDateTime);
+        case "R": return relativeTime(dt);
+        default: return dt.toString();
+      }
+    }
+
+    // 相對時間
+    function relativeTime(dt) {
+      const now = new Date();
+      const diffSec = Math.floor((dt - now) / 1000);
+      const absSec = Math.abs(diffSec);
+      if (absSec < 60) return diffSec > 0 ? `${absSec} 秒後` : `${absSec} 秒前`;
+      const diffMin = Math.floor(absSec / 60);
+      if (diffMin < 60) return diffSec > 0 ? `${diffMin} 分鐘後` : `${diffMin} 分鐘前`;
+      const diffHr = Math.floor(diffMin / 60);
+      if (diffHr < 24) return diffSec > 0 ? `${diffHr} 小時後` : `${diffHr} 小時前`;
+      const diffDay = Math.floor(diffHr / 24);
+      return diffSec > 0 ? `${diffDay} 天後` : `${diffDay} 天前`;
     }
   </script>
 </body>
